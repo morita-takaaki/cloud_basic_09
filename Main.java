@@ -1,25 +1,44 @@
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 public class Main {
     public static void main(String[] args) {
+        Connection conn = null;
+
         try {
-            // SQLite DB に接続
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:student.db");
-            Statement stmt = conn.createStatement();
+            // ★ ① SQLite JDBC ドライバを明示的にロード
+            Class.forName("org.sqlite.JDBC");
+            System.out.println("SQLite JDBC Driver loaded.");
 
-            // DB の内容を取得
-            ResultSet rs = stmt.executeQuery("SELECT * FROM students");
+            // ★ ② 同じフォルダの student.db に接続
+            String url = "jdbc:sqlite:student.db";
+            conn = DriverManager.getConnection(url);
+            System.out.println("Connected to DB.");
 
-            while (rs.next()) {
-                System.out.println(
-                    rs.getString("student_id") + " | " +
-                    rs.getString("name") + " | " +
-                    rs.getString("email")
-                );
+            String sql = "SELECT student_id, name, email FROM students";
+
+            try (PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+
+                while (rs.next()) {
+                    String id = rs.getString("student_id");
+                    String name = rs.getString("name");
+                    String email = rs.getString("email");
+
+                    System.out.println(id + " | " + name + " | " + email);
+                }
             }
 
-            conn.close();
         } catch (Exception e) {
+            // エラーはそのまま表示
             e.printStackTrace();
+        } finally {
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) {}
+            }
         }
     }
 }
